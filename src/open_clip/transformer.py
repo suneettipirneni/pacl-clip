@@ -478,6 +478,10 @@ class VisionTransformer(nn.Module):
              x], dim=1)  # shape = [*, grid ** 2 + 1, width]
         x = x + self.positional_embedding.to(x.dtype)
 
+        print(f"grid size = {self.grid_size}")
+        print(f"patch size = {self.patch_size}")
+        print(x.shape)
+
         # a patch_dropout of 0. would mean it is disabled and this function would do nothing but return what was passed in
         x = self.patch_dropout(x)
         x = self.ln_pre(x)
@@ -496,12 +500,38 @@ class VisionTransformer(nn.Module):
 
         if self.proj is not None:
             pooled = pooled @ self.proj
+        
 
         if self.output_tokens:
             return pooled, tokens
-        
+
+        print(pooled.shape)
+ 
         return pooled
 
+class PACLVisionEncoder(nn.Module):
+    def __init__(self, image_size: int, patch_size: int, width: int, output_dim: int):
+        super().__init__()
+        self.output_dim = output_dim
+
+        self.in_features = (image_size // patch_size)**2 * width
+
+        print(self.in_features)
+
+        self.fc1 = nn.Linear(in_features=width, out_features=output_dim)
+        
+        self.fc2 = nn.Linear(in_features=width, out_features=output_dim)
+        self.act = nn.ReLU()
+        self.fc3 = nn.Linear(in_features=output_dim, out_features=output_dim)
+
+    def forward(self, tokens):
+        left = self.fc1(tokens)
+
+        right = self.fc2(tokens)
+        right = self.act(right)
+        right = self.fc3(right)
+
+        return right + left
 
 class TextTransformer(nn.Module):
     output_tokens: torch.jit.Final[bool]

@@ -16,7 +16,7 @@ from torch.utils.checkpoint import checkpoint
 from .hf_model import HFTextEncoder
 from .modified_resnet import ModifiedResNet
 from .timm_model import TimmModel
-from .transformer import LayerNormFp32, LayerNorm, QuickGELU, Attention, VisionTransformer, TextTransformer
+from .transformer import LayerNormFp32, LayerNorm, QuickGELU, Attention, VisionTransformer, TextTransformer, PACLVisionEncoder
 from .utils import to_2tuple
 
 
@@ -136,7 +136,7 @@ def _build_vision_tower(
             attentional_pool=vision_cfg.attentional_pool,
             n_queries=vision_cfg.n_queries,
             attn_pooler_heads=vision_cfg.attn_pooler_heads,
-            output_tokens=vision_cfg.output_tokens,
+            output_tokens=True,
             output_dim=embed_dim,
             act_layer=act_layer,
             norm_layer=norm_layer,
@@ -199,9 +199,10 @@ class CLIP(nn.Module):
             output_dict: bool = False,
     ):
         super().__init__()
+        full_vision_cfg = CLIPVisionCfg(**vision_cfg)
         self.output_dict = output_dict
         self.visual = _build_vision_tower(embed_dim, vision_cfg, quick_gelu, cast_dtype)
-
+        self.visual_encode = PACLVisionEncoder(image_size=full_vision_cfg.image_size, patch_size=full_vision_cfg.patch_size, width=full_vision_cfg.width, output_dim=embed_dim)
         text = _build_text_tower(embed_dim, text_cfg, quick_gelu, cast_dtype)
         self.transformer = text.transformer
         self.context_length = text.context_length
@@ -228,7 +229,8 @@ class CLIP(nn.Module):
         self.transformer.grad_checkpointing = enable
 
     def encode_image(self, image, normalize: bool = False):
-        features = self.visual(image)
+        _, tokens = self.visual(image)
+        features = self.visual_encode(tokens)
         return F.normalize(features, dim=-1) if normalize else features
 
     def encode_text(self, text, normalize: bool = False):

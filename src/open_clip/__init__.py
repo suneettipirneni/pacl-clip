@@ -1,3 +1,4 @@
+print("test")
 from .coca_model import CoCa
 from .constants import OPENAI_DATASET_MEAN, OPENAI_DATASET_STD
 from .factory import create_model, create_model_and_transforms, create_model_from_pretrained, get_tokenizer, create_loss
