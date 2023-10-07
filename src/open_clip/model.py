@@ -268,6 +268,14 @@ class CLIP(nn.Module):
         if self.logit_bias is not None:
             return image_features, text_features, self.logit_scale.exp(), self.logit_bias
         return image_features, text_features, self.logit_scale.exp()
+    
+    def lock_for_pacl(self):
+        for param in self.parameters():
+            param.requires_grad = False
+
+        # Only unlock e_v for PACL
+        for param in self.visual_encode.parameters():
+            param.requires_grad = True
 
 
 class CustomTextCLIP(nn.Module):
