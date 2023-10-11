@@ -259,6 +259,9 @@ def main(args):
 
     random_seed(args.seed, args.rank)
 
+    if args.train_pacl:
+        model.lock_for_pacl()
+
     if args.trace:
         model = trace_model(model, batch_size=args.batch_size, device=device)
 

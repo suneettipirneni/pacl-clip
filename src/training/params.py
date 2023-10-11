@@ -294,6 +294,12 @@ def parse_args(args):
         help="torch.jit.trace the model for inference / eval only",
     )
     parser.add_argument(
+        "--train-pacl",
+        default=False,
+        action='store_true',
+        help="Train PACL variant of model.",
+    )
+    parser.add_argument(
         "--accum-freq", type=int, default=1, help="Update the model every --acum-freq steps."
     )
     # arguments for distributed training

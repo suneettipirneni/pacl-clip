@@ -114,15 +114,21 @@ def train_one_epoch(model, data, loss, epoch, optimizer, scaler, scheduler, dist
             # First, cache the features without any gradient tracking.
             with torch.no_grad():
                 with autocast():
+                    # Generate outputs (without gradient updates) from the inputs
                     model_out = model(images, texts)
 
+                    # Remove any unwanted keys from the dictionary
                     for f in ("logit_scale", "logit_bias"):
                         model_out.pop(f, None)
 
+                    # Go through all the dictionary entries and 
+                    # cache them
                     for key, val in model_out.items():
+                        # If there's already an entry for a key
+                        # append the new value to it.
                         if key in accum_features:
                             accum_features[key].append(val)
-                        else:
+                        else: # If not create a new singleton array with the new value
                             accum_features[key] = [val]
 
                 accum_images.append(images)
@@ -141,6 +147,7 @@ def train_one_epoch(model, data, loss, epoch, optimizer, scaler, scheduler, dist
                 images = accum_images[j]
                 texts = accum_texts[j]
                 with autocast():
+                    # Generate outputs (with gradient updates) from the inputs
                     model_out = model(images, texts)
 
                     inputs_no_accum = {}
